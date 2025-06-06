@@ -1,23 +1,42 @@
-# --- Stage 1: Build ---
-FROM golang:1.24 AS builder
+# -------- Stage 1: Builder --------
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
+
+# Install Git for fetching Go modules
+RUN apk add --no-cache git
+
+# Install Air for hot reload
+RUN go install github.com/air-verse/air@latest
+
+# Copy module files and download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy full project
 COPY . .
 
-# Ensure modules are tidy
-RUN go mod tidy
+# Optional: Prebuild one of the entrypoints
+RUN go build -o main ./cmd/web
 
-# Build the server binary for Linux
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o server ./cmd/web
-
-# --- Stage 2: Run ---
-FROM debian:bookworm-slim
+# -------- Stage 2: Final Dev Container --------
+FROM golang:1.24-alpine
 
 WORKDIR /app
-COPY --from=builder /app/server .
 
-# Make sure the binary is executable
-RUN chmod +x ./server
+# Install runtime deps
+RUN apk add --no-cache git tzdata
+
+# Copy dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy app source
+COPY . .
+
+# Copy air binary
+COPY --from=builder /go/bin/air /usr/bin/air
 
 EXPOSE 8080
-ENTRYPOINT ["./server"]
+
+CMD ["air"]

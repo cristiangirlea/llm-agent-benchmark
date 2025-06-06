@@ -9,14 +9,11 @@ services:
       - REDIS_HOST=redis
       - POSTGRES_HOST=postgres
       - OLLAMA_HOST=http://host.docker.internal:11434
+    volumes:
+      - .:/app
+      - air_tmp:/app/tmp
     depends_on:
-      - redis
       - postgres
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
 
   postgres:
     image: postgres:17
@@ -30,5 +27,11 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
 volumes:
+  air_tmp:
   pgdata:
