@@ -10,7 +10,7 @@
             line-height: 1.6;
         }
 
-        select, button {
+        select, button, textarea {
             font-size: 1rem;
         }
 
@@ -93,5 +93,39 @@
     <li><strong>Total duration:</strong> {{.Metrics.TotalDuration}} seconds</li>
 </ul>
 {{end}}
+
+<!-- 🔧 Agent Planner UI -->
+<h2>🧠 Agent Planner</h2>
+<form id="planForm">
+    <label for="objective"><strong>What should the agent plan?</strong></label><br>
+    <textarea name="objective" id="objective" rows="4" cols="80" placeholder="Build a budgeting app that tracks expenses and gives monthly summaries..."></textarea><br><br>
+    <button type="submit">Generate Plan</button>
+</form>
+
+<div id="planResult"></div>
+
+<script>
+    document.getElementById("planForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const objective = document.getElementById("objective").value;
+
+        const res = await fetch("/api/plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ objective })
+        });
+
+        const data = await res.json();
+
+        if (data.steps) {
+            document.getElementById("planResult").innerHTML =
+                "<h3>Agent Plan:</h3><ul>" +
+                data.steps.map(step => `<li>${step}</li>`).join("") +
+                "</ul>";
+        } else {
+            document.getElementById("planResult").innerHTML = "<p style='color:red;'>Agent failed to plan task.</p>";
+        }
+    });
+</script>
 </body>
 </html>

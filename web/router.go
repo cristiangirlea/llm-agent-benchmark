@@ -21,5 +21,10 @@ func RegisterRoutes() {
 	http.HandleFunc("/", RenderIndex)
 	http.HandleFunc("/generate", HandleGenerateResponse)
 	http.HandleFunc("/healthz", HealthCheck)
+	http.HandleFunc("/api/plan", withCORS(PlanHandler))
 	http.HandleFunc("/api", withCORS(Handler))
+	http.HandleFunc("/api/test", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"ok": true}`))
+	})
 }
