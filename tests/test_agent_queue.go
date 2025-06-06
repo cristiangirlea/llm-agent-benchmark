@@ -1,7 +1,7 @@
 package main
 
 import (
-	"benchmark/agents"
+	"benchmark/internal/agents"
 	"benchmark/queue"
 	"fmt"
 	"os"

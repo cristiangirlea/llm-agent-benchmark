@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"benchmark/core"
+	"benchmark/internal/core"
 	"encoding/json"
 	"fmt"
 	"os"

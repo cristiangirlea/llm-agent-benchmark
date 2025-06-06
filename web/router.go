@@ -20,5 +20,6 @@ func withCORS(h http.HandlerFunc) http.HandlerFunc {
 func RegisterRoutes() {
 	http.HandleFunc("/", RenderIndex)
 	http.HandleFunc("/generate", HandleGenerateResponse)
+	http.HandleFunc("/healthz", HealthCheck)
 	http.HandleFunc("/api", withCORS(Handler))
 }

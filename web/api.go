@@ -2,7 +2,7 @@
 package web
 
 import (
-	"benchmark/core"
+	core2 "benchmark/internal/core"
 	"encoding/json"
 	"net/http"
 )
@@ -15,9 +15,9 @@ type APIRequest struct {
 
 // APIResponse defines the output JSON structure including metrics and optional error.
 type APIResponse struct {
-	Output  string       `json:"output"`
-	Metrics core.Metrics `json:"metrics"`
-	Error   string       `json:"error,omitempty"`
+	Output  string        `json:"output"`
+	Metrics core2.Metrics `json:"metrics"`
+	Error   string        `json:"error,omitempty"`
 }
 
 // Handler processes POST /api requests with a model and prompt.
@@ -28,7 +28,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, metrics, err := core.Execute(req.Model, req.Prompt)
+	output, metrics, err := core2.Execute(req.Model, req.Prompt)
 
 	resp := APIResponse{
 		Output:  output,

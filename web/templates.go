@@ -1,7 +1,7 @@
 package web
 
 import (
-	"benchmark/core"
+	"benchmark/internal/core"
 	"fmt"
 	"html/template"
 	"net/http"

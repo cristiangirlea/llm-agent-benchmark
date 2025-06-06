@@ -1,6 +1,8 @@
 package web
 
-import "benchmark/core"
+import (
+	"benchmark/internal/core"
+)
 
 type GenerateRequest struct {
 	Model  string `json:"model"`

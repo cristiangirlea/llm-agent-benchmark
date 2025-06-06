@@ -1,8 +1,8 @@
-package main
+package cli
 
 import (
-	"benchmark/config"
-	"benchmark/core"
+	"benchmark/internal/config"
+	"benchmark/internal/core"
 	"fmt"
 	"os"
 	"time"
