@@ -2,22 +2,23 @@ services:
   app:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.dev
     ports:
       - "8080:8080"
-    environment:
-      - REDIS_HOST=redis
-      - POSTGRES_HOST=postgres
-      - OLLAMA_HOST=http://host.docker.internal:11434
     volumes:
       - .:/app
       - air_tmp:/app/tmp
+    environment:
+      - POSTGRES_DSN=postgres://agent:agentpass@postgres:5432/agentdb?sslmode=disable
+      - REDIS_HOST=redis:6379
+      - POSTGRES_HOST=postgres
+      - OLLAMA_HOST=http://host.docker.internal:11434
     depends_on:
       - postgres
+      - redis
 
   postgres:
     image: postgres:17
-    restart: always
     environment:
       POSTGRES_USER: agent
       POSTGRES_PASSWORD: agentpass
@@ -33,5 +34,5 @@ services:
       - "6379:6379"
 
 volumes:
-  air_tmp:
   pgdata:
+  air_tmp:

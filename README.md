@@ -1,149 +1,144 @@
-# 🔍 Benchmark — Local LLM Benchmarking UI + Simple CLI (would be upgraded to react)
+# 🔍 Benchmark — LLM Benchmarking UI + CLI + Agents (Live Reload + Queue-ready)
 
-This project provides a lightweight interface for benchmarking local LLMs (such as [Ollama](https://ollama.com)) using both a **web UI** and a **command-line interface**. It supports streaming responses, tracks token generation metrics, and displays memory usage and execution speed.
+This project provides a modular system to **benchmark local LLMs (Ollama)** via a web UI or CLI, and lays the groundwork for agent-based tasks and project planning.
 
-> 🧠 Built in Go (Golang) with clean modular structure, ready for expansion into Express/React.
+> 🧠 Built in Go (Golang), with Air-based hot reload in Docker and a clean Domain-Driven folder structure. Includes Redis queue + Postgres, and can evolve into a full SaaS backend.
 
 ---
 
 ## 📁 Project Structure
 
-> Everything is initialized inside the `Benchmark/` folder (ignore any parent directory name).
+All code lives under `Benchmark/` (ignore parent dirs if any):
 
 ```
 Benchmark/
-├── cli/                # CLI entrypoint (benchmark runner)
-│   └── benchmark.go
-├── cmd/                # Optional wrappers or future binaries
-├── config/             # Model loader
-│   └── models.go
-├── core/               # Core execution logic and system metrics
-│   ├── executor.go
-│   ├── logger.go
-│   └── metrics.go
-├── ui/                 # CLI + Web UI helpers
-│   ├── input.go
-│   ├── metrics.go
-│   └── progress.go
-├── web/                # Web UI + API layer
-│   ├── api.go
-│   ├── handlers.go
-│   ├── router.go
-│   ├── templates/
-│   │   └── index.html
-│   └── types.go
-├── models.txt          # List of installed models inside Ollama
-├── go.mod              # Go module definition
-├── main.go             # Starts the web server (http://localhost:8080)
+├── cmd/                # Entrypoints for binaries
+│   ├── web/            # HTTP API server
+│   ├── cli/            # CLI benchmarking
+│   └── worker/         # Agent/queue processor
+├── docker/             # Docker build targets
+│   ├── Dockerfile.dev
+│   └── Dockerfile.prod
+├── internal/           # App logic (domain-driven)
+│   ├── agents/         # Autonomous planner logic
+│   ├── config/         # Global config or constants
+│   ├── core/           # Benchmark logic, system metrics
+│   ├── migrations/     # DB migrations (SQL)
+│   ├── models/         # App-level structs (e.g., Project)
+│   └── persistence/    # Database connection (Postgres)
+├── queue/              # Redis queue logic
+├── results/            # Benchmark result processors
+├── tests/              # Unit tests (example included)
+├── ui/                 # Helpers for CLI or Web UI display
+├── web/                # Web interface layer
+│   ├── templates/      # HTML templates
+│   └── routes, handlers, types, etc.
+├── .air.toml           # Hot reload config (Air)
+├── docker-compose.yml  # Full dev environment
+├── models.txt          # Ollama model list
+├── go.mod / go.sum     # Go module setup
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Development)
 
 ### ✅ 1. Requirements
-- Go 1.20+
-- [Ollama](https://ollama.com) installed and running locally on `http://localhost:11434`
 
-### ✅ 2. Setup
+- [Docker](https://www.docker.com/)
+- [Ollama](https://ollama.com) running locally at `http://localhost:11434`
 
-Initialize the Go module (if not already done):
-
-```bash
-cd Benchmark
-go mod tidy
-```
-
-Ensure `models.txt` contains a list of models available in your local Ollama setup:
-
-```
-phi3:mini
-llama3
-mistral
-...
-```
-
-### ✅ 3. Run Web UI
+### ✅ 2. Start Dev Mode
 
 ```bash
-go run main.go
+docker compose up --build
 ```
 
-Open your browser to:  
-👉 [http://localhost:8080](http://localhost:8080)
+This will:
+
+- Start Redis + Postgres
+- Start the app with **Air** (live reloading on file change)
+- Expose the app on [http://localhost:8080](http://localhost:8080)
+
+⏱ Changes to `.go` or `.html` files will automatically rebuild + restart the server.
+
+> ❗ Note: Browser will not auto-refresh. You’ll need to reload the page manually.
 
 ---
 
-### ✅ 4. Run via CLI
+### ✅ 3. Try CLI Benchmark
 
 ```bash
-go run cli/benchmark.go phi3:mini "Write a Go function that adds two numbers"
+go run ./cmd/cli phi3:mini "What is a goroutine in Go?"
 ```
 
-📦 Output:
+It prints:
 
 ```
 📦 Running benchmark for model: phi3:mini
-🧠 Prompt: Write a Go function that adds two numbers
-
 ✅ Output:
-package main
-
 ...
 
 📦 Tokens: 108
 🚀 Tokens/sec: 26.52
-🕒 First token: 3.41s
-⏱️ Duration: 4.07s
-✅ Done in 4.07s
+⏱ First token: 3.41s
+⏱ Total duration: 4.07s
 ```
 
 ---
 
-## ⚙️ Configuration
+## 🧠 Tech Highlights
 
-- **Model list**: update `models.txt`
-- **Ollama port**: defaults to `http://localhost:11434`
-- **Prompt source**:
-  - Web UI supports dropdown + free-form input
-  - CLI takes the prompt as a second argument
+- **Air**-based hot reload in dev container (`Dockerfile.dev`)
+- **Multistage Docker build** for production (`Dockerfile.prod`)
+- **Redis-backed queue system** with `Enqueue` / `Dequeue`
+- **Postgres DB connection** with env-configurable DSN
+- **Ollama integration** (via HTTP on port 11434)
+- Clean Go module layout & separation of concerns
+- Easily extendable to run agents or multi-step tasks
 
 ---
 
-## 🛠️ To Do
+## ⚙️ Config
 
+- `models.txt`: list of model IDs used by CLI/Web UI
+- `.env`: optional, used for overriding:
+  - `REDIS_HOST`
+  - `POSTGRES_DSN`
+  - `OLLAMA_HOST`
+- `.air.toml`: defines hot reload behavior for `air`
+
+---
+
+## 🛠 Planned Features
+
+- [ ] Agent worker to pick tasks from queue
+- [ ] Agent planner to split prompts into subtasks
+- [ ] React-based frontend (currently HTML + Go templating)
 - [ ] Markdown rendering in UI
-- [ ] Support for JSON export
-- [ ] Multi-run benchmark comparison
-- [ ] Express + React frontend (planned)
+- [ ] JSON export & comparison of runs
+- [ ] SQLite support (optional fallback)
+- [ ] GitHub Action for benchmarking models on PR
 
 ---
 
-# Commercial Use Notice
+## 📄 License
 
-This project is licensed under the GNU Affero General Public License v3 (AGPLv3).
-
-## What that means:
+Licensed under **GNU Affero General Public License v3 (AGPLv3)**
 
 ✅ You can:
-- Use this project non-commercially
-- Fork it, submit PRs, improve it
-- Use it internally, for learning or benchmarking
-- Build on it for personal or open projects
+- Use it personally
+- Fork & contribute
+- Benchmark local models
 
-🚫 You **may NOT**:
-- Use it as part of **a commercial or paid product/service**
-- Host it publicly **without making your modified source code available**
+🚫 You **may not**:
+- Use it in paid/hosted products without a commercial license
+- Rehost without releasing source
 
-## Commercial Use Options:
-
-If you'd like to use this project **commercially** or include it in a product, please contact the author to discuss licensing terms.
-
-📩 Email: [cristiangirlea@gmail.com]
+💼 For commercial use → [cristiangirlea@gmail.com](mailto:cristiangirlea@gmail.com)
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests welcome!  
-Open an issue for suggestions or bug reports.
+PRs welcome. Issues encouraged. Ideas loved.
