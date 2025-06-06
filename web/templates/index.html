@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Model Benchmark UI</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 2rem;
+            line-height: 1.6;
+        }
+
+        select, button {
+            font-size: 1rem;
+        }
+
+        pre {
+            background-color: #f9f9f9;
+            padding: 1em;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            padding: 0.3em 0;
+        }
+
+        h1, h2, h3 {
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+<h1>Select Model & Prompt</h1>
+<form action="/generate" method="POST">
+    <label>
+        <strong>Model:</strong>
+        <select name="model">
+            {{range .Models}}<option>{{.}}</option>{{end}}
+        </select>
+    </label>
+    <br><br>
+
+    <label>
+        <strong>Prompt:</strong>
+        <select name="prompt" onchange="document.getElementById('customPrompt').value = this.value;">
+            <option value="">-- Choose a predefined prompt --</option>
+            {{range .Prompts}}<option>{{.}}</option>{{end}}
+        </select>
+    </label>
+    <br><br>
+
+    <label>
+        <strong>Or write your own:</strong><br>
+        <textarea id="customPrompt" name="prompt" rows="5" cols="80" placeholder="Write your custom prompt here..."></textarea>
+    </label>
+
+    <br><br>
+
+    <label>
+        <input type="checkbox" name="metrics" value="on" checked>
+        Show system metrics
+    </label>
+    <br><br>
+
+    <button type="submit">Run</button>
+</form>
+
+{{if .Error}}
+<p style="color:red;">Error: {{.Error}}</p>
+{{end}}
+
+{{if .Output}}
+<h2>Output</h2>
+<pre><code>{{.Output}}</code></pre>
+{{end}}
+
+{{if .ShowMetrics}}
+<h3>Metrics</h3>
+<ul>
+    <li><strong>Alloc:</strong> {{toKB .SystemAfter.Alloc}}</li>
+    <li><strong>TotalAlloc:</strong> {{toKB .SystemAfter.TotalAlloc}}</li>
+    <li><strong>Sys:</strong> {{toKB .SystemAfter.Sys}}</li>
+    <li><strong>GC Cycles:</strong> {{.SystemAfter.NumGC}}</li>
+    <li><strong>Tokens/sec:</strong> {{formatFloat .Metrics.TokensPerSec}}</li>
+    <li><strong>Time to first token:</strong> {{.Metrics.FirstTokenTime}} seconds</li>
+    <li><strong>Total duration:</strong> {{.Metrics.TotalDuration}} seconds</li>
+</ul>
+{{end}}
+</body>
+</html>
