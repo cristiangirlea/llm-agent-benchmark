@@ -119,12 +119,6 @@ package main
 
 ---
 
-## 📄 License
-
-MIT — use freely and contribute!
-
----
-
 ## 🤝 Contributing
 
 Pull requests welcome!  
