@@ -119,9 +119,27 @@ package main
 
 ---
 
-## 📄 License
+# Commercial Use Notice
 
-MIT — use freely and contribute!
+This project is licensed under the GNU Affero General Public License v3 (AGPLv3).
+
+## What that means:
+
+✅ You can:
+- Use this project non-commercially
+- Fork it, submit PRs, improve it
+- Use it internally, for learning or benchmarking
+- Build on it for personal or open projects
+
+🚫 You **may NOT**:
+- Use it as part of **a commercial or paid product/service**
+- Host it publicly **without making your modified source code available**
+
+## Commercial Use Options:
+
+If you'd like to use this project **commercially** or include it in a product, please contact the author to discuss licensing terms.
+
+📩 Email: [cristiangirlea@gmail.com]
 
 ---
 
