@@ -1,7 +1,10 @@
 package sweep
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -157,4 +160,51 @@ func fmtDur(d time.Duration) string {
 
 func row(b *strings.Builder, cells []string) {
 	b.WriteString("| " + strings.Join(cells, " | ") + " |\n")
+}
+
+// ReadResults reads the results.jsonl of each run folder, in order. When a target appears in
+// more than one folder the later result replaces the earlier one in place, so a re-run of one
+// model (bench sweep --only) can be merged into a full sweep.
+func ReadResults(dirs ...string) ([]Result, error) {
+	var out []Result
+	index := map[string]int{}
+	for _, d := range dirs {
+		data, err := os.ReadFile(filepath.Join(d, "results.jsonl"))
+		if err != nil {
+			return nil, err
+		}
+		for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+			if line == "" {
+				continue
+			}
+			var r Result
+			if err := json.Unmarshal([]byte(line), &r); err != nil {
+				return nil, fmt.Errorf("%s: %w", d, err)
+			}
+			if i, ok := index[r.Name]; ok {
+				out[i] = r
+				continue
+			}
+			index[r.Name] = len(out)
+			out = append(out, r)
+		}
+	}
+	return out, nil
+}
+
+// Concurrencies lists the concurrency levels present in the results, in ascending order, for
+// rendering a report without the sweep file.
+func Concurrencies(results []Result) []int {
+	seen := map[int]bool{}
+	var out []int
+	for _, r := range results {
+		for _, l := range r.Speed {
+			if !seen[l.Concurrency] {
+				seen[l.Concurrency] = true
+				out = append(out, l.Concurrency)
+			}
+		}
+	}
+	slices.Sort(out)
+	return out
 }

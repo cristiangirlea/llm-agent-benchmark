@@ -66,6 +66,15 @@ Names may contain letters, digits, `_` and `-` only: they become hrn eval varian
 Flags: `--only a,b` runs only the named targets, `--no-agents` skips the CLI baselines,
 `--no-evals` measures speed only, `--no-speed` runs evals only.
 
+`bench report <run-dir>...` renders one report from several runs. A target that appears in
+more than one run takes its result from the last, so a model re-run with `--only` after a fix
+replaces its row in a full sweep.
+
+## Results
+
+- [2026-10-01](docs/results/2026-10-01.md): seven local models on an RX 7900 XT against Claude
+  Sonnet and Codex, 3 attempts per task.
+
 ## How the pieces connect
 
 An endpoint's eval stage runs hrn's own agent loop (`backend: api`) with

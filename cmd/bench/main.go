@@ -18,6 +18,8 @@ const usage = `bench: compare local models and coding agents on speed and on hrn
 Usage:
   bench sweep [flags] [sweep.json]   run the sweep (default file: sweep.json)
   bench check [sweep.json]           load and validate a sweep file, print what it would run
+  bench report <run-dir>...          one report from several runs; a later run of a target
+                                     replaces the earlier one (merge a --only re-run)
 
 Sweep flags:
   --only a,b      run only the named endpoints and agents
@@ -36,6 +38,8 @@ func main() {
 		os.Exit(runSweep(os.Args[2:]))
 	case "check":
 		os.Exit(runCheck(os.Args[2:]))
+	case "report":
+		os.Exit(runReport(os.Args[2:]))
 	case "-h", "--help", "help":
 		fmt.Print(usage)
 	default:
@@ -94,6 +98,21 @@ func runCheck(args []string) int {
 	for _, s := range c.Evals.Suites {
 		fmt.Printf("suite     %s\n", s)
 	}
+	return 0
+}
+
+func runReport(dirs []string) int {
+	if len(dirs) == 0 {
+		fmt.Fprintln(os.Stderr, "bench report: name one or more run folders")
+		return 2
+	}
+	results, err := sweep.ReadResults(dirs...)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "bench:", err)
+		return 1
+	}
+	c := sweep.Config{Speed: sweep.Speed{Concurrency: sweep.Concurrencies(results)}}
+	fmt.Print(sweep.Report(results, c))
 	return 0
 }
 

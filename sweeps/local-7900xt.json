@@ -11,7 +11,7 @@
     {"name": "granite42-8b",    "model": "granite-4.2-8b-Q4_K_M.gguf",   "args": ["-c", "98304", "--parallel", "4"]},
     {"name": "qwen35-9b",       "model": "Qwen3.5-9B-Q4_K_M.gguf",       "args": ["-c", "98304", "--parallel", "4"]},
     {"name": "ornith15-9b",     "model": "Ornith-1.5-9B-Q4_K_M.gguf",    "args": ["-c", "98304", "--parallel", "4"]},
-    {"name": "gpt-oss-20b",      "model": "gpt-oss-20b-MXFP4.gguf",       "args": ["--n-cpu-moe", "8", "-c", "98304", "--parallel", "4"]},
+    {"name": "gpt-oss-20b",      "model": "gpt-oss-20b-MXFP4.gguf",       "args": ["-c", "98304", "--parallel", "4"]},
     {"name": "gemma4-26b-a4b",   "model": "gemma-4-26B-A4B-it-Q4_0.gguf", "args": ["--n-cpu-moe", "12", "-c", "98304", "--parallel", "4"]}
   ],
 

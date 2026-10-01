@@ -225,3 +225,25 @@ func TestReport(t *testing.T) {
 		}
 	}
 }
+
+func TestReadResultsLaterRunReplacesTarget(t *testing.T) {
+	full, rerun := t.TempDir(), t.TempDir()
+	write(t, full, "results.jsonl", `{"name":"a","kind":"endpoint","speed":[{"concurrency":1,"throughput_tps":40},{"concurrency":4,"throughput_tps":80}]}
+{"name":"b","kind":"agent"}
+`)
+	write(t, rerun, "results.jsonl", `{"name":"a","kind":"endpoint","speed":[{"concurrency":1,"throughput_tps":150}]}
+`)
+	got, err := ReadResults(full, rerun)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[0].Name != "a" || got[1].Name != "b" {
+		t.Fatalf("targets = %+v, want a then b, in first-seen order", got)
+	}
+	if got[0].Speed[0].Throughput != 150 {
+		t.Errorf("a's speed = %+v, want the re-run's", got[0].Speed)
+	}
+	if !slices.Equal(Concurrencies(got), []int{1}) {
+		t.Errorf("Concurrencies = %v", Concurrencies(got))
+	}
+}
