@@ -1,144 +1,134 @@
-# 🔍 Benchmark — LLM Benchmarking UI + CLI + Agents (Live Reload + Queue-ready)
+# llm-agent-benchmark
 
-This project provides a modular system to **benchmark local LLMs (Ollama)** via a web UI or CLI, and lays the groundwork for agent-based tasks and project planning.
+Compare local models and coding agents on the two things that decide whether one is worth
+using: **how fast it is** on this hardware, and **whether it gets coding tasks right**.
 
-> 🧠 Built in Go (Golang), with Air-based hot reload in Docker and a clean Domain-Driven folder structure. Includes Redis queue + Postgres, and can evolve into a full SaaS backend.
+`bench sweep` takes a list of targets and puts each one through the same measurements:
 
----
+- **Endpoints**, meaning models behind an HTTP API. A model file is launched in llama-server and stopped
+  afterwards; an already-running server (Ollama, LM Studio, vLLM, a llama-server started by hand)
+  is only connected to. Each gets a **speed** stage (time to first token, decode tokens per
+  second, total throughput with several requests at once) and the **eval** stage.
+- **Agents**, meaning coding agents that [hrn](https://github.com/cristiangirlea/harness) drives:
+  Claude Code, Codex, Gemini or opencode through their CLIs, or hosted models through hrn's API
+  loop. They get the eval stage only.
 
-## 📁 Project Structure
-
-All code lives under `Benchmark/` (ignore parent dirs if any):
-
-```
-Benchmark/
-├── cmd/                # Entrypoints for binaries
-│   ├── web/            # HTTP API server
-│   ├── cli/            # CLI benchmarking
-│   └── worker/         # Agent/queue processor
-├── docker/             # Docker build targets
-│   ├── Dockerfile.dev
-│   └── Dockerfile.prod
-├── internal/           # App logic (domain-driven)
-│   ├── agents/         # Autonomous planner logic
-│   ├── config/         # Global config or constants
-│   ├── core/           # Benchmark logic, system metrics
-│   ├── migrations/     # DB migrations (SQL)
-│   ├── models/         # App-level structs (e.g., Project)
-│   └── persistence/    # Database connection (Postgres)
-├── queue/              # Redis queue logic
-├── results/            # Benchmark result processors
-├── tests/              # Unit tests (example included)
-├── ui/                 # Helpers for CLI or Web UI display
-├── web/                # Web interface layer
-│   ├── templates/      # HTML templates
-│   └── routes, handlers, types, etc.
-├── .air.toml           # Hot reload config (Air)
-├── docker-compose.yml  # Full dev environment
-├── models.txt          # Ollama model list
-├── go.mod / go.sum     # Go module setup
-```
-
----
-
-## 🚀 Quick Start (Development)
-
-### ✅ 1. Requirements
-
-- [Docker](https://www.docker.com/)
-- [Ollama](https://ollama.com) running locally at `http://localhost:11434`
-
-### ✅ 2. Start Dev Mode
-
-```bash
-docker compose up --build
-```
-
-This will:
-
-- Start Redis + Postgres
-- Start the app with **Air** (live reloading on file change)
-- Expose the app on [http://localhost:8080](http://localhost:8080)
-
-⏱ Changes to `.go` or `.html` files will automatically rebuild + restart the server.
-
-> ❗ Note: Browser will not auto-refresh. You’ll need to reload the page manually.
-
----
-
-### ✅ 3. Try CLI Benchmark
-
-```bash
-go run ./cmd/cli phi3:mini "What is a goroutine in Go?"
-```
-
-It prints:
+The eval stage runs [hrn-evals](https://github.com/cristiangirlea/hrn-evals) suites through
+`hrn eval`, one target at a time: real agent tasks in git worktrees, decided by gate commands
+(tests pass, a mutant fails, a trap was not followed), not by a model's opinion. Every target
+runs the same tasks, so a 4B local model and Claude Code end up in one table.
 
 ```
-📦 Running benchmark for model: phi3:mini
-✅ Output:
+bench sweep sweeps/local-7900xt.json
+
+══ qwen35-4b (Qwen3.5-4B-Q4_K_M.gguf)
+speed: concurrency [1 4], 256 tokens each
+  c=1  first token 91ms  decode 123.5 t/s  total 118.8 t/s
+  c=4  first token 267ms  decode 82.3 t/s  total 304.3 t/s
+eval suites/golden/greeting.json… 1/1 passed
+eval suites/golden/gobench.json… 3/4 passed
 ...
-
-📦 Tokens: 108
-🚀 Tokens/sec: 26.52
-⏱ First token: 3.41s
-⏱ Total duration: 4.07s
 ```
 
----
+Each sweep writes `results/<timestamp>/`: `results.jsonl` (one line per target, written as soon
+as it finishes, so an interrupted sweep keeps what it measured), `report.md` (summary and a
+task-by-target table), `manifest.json` (the sweep as loaded, hrn and llama-server versions) and
+`logs/` (server output, hrn output).
 
-## 🧠 Tech Highlights
+## Install
 
-- **Air**-based hot reload in dev container (`Dockerfile.dev`)
-- **Multistage Docker build** for production (`Dockerfile.prod`)
-- **Redis-backed queue system** with `Enqueue` / `Dequeue`
-- **Postgres DB connection** with env-configurable DSN
-- **Ollama integration** (via HTTP on port 11434)
-- Clean Go module layout & separation of concerns
-- Easily extendable to run agents or multi-step tasks
+Go 1.26, standard library only:
 
----
+```bash
+go build -o bench ./cmd/bench
+```
 
-## ⚙️ Config
+The eval stage needs `hrn` on PATH and a checkout of hrn-evals. Launching models needs a
+llama.cpp build (`llama-server`); see [inference](https://github.com/cristiangirlea/inference)
+for the one measured on an RX 7900 XT.
 
-- `models.txt`: list of model IDs used by CLI/Web UI
-- `.env`: optional, used for overriding:
-  - `REDIS_HOST`
-  - `POSTGRES_DSN`
-  - `OLLAMA_HOST`
-- `.air.toml`: defines hot reload behavior for `air`
+## The sweep file
 
----
+[`sweeps/local-7900xt.json`](sweeps/local-7900xt.json) is a complete example. Relative paths are
+taken from the file's directory.
 
-## 🛠 Planned Features
+| Field | Meaning |
+|---|---|
+| `llama_server`, `models_dir`, `port`, `server_args`, `start_timeout` | How launched endpoints start. `server_args` go to every model, an endpoint's own `args` after them. |
+| `endpoints[]` | `name`, plus either `model` (a file in `models_dir`, launched) or `base_url` (already running). `model_id` is sent as the request's model (Ollama routes by it). `anthropic` says whether the server answers `/v1/messages`; it defaults to true for launched llama-server. |
+| `agents[]` | `name`, `backend` (an hrn backend: `claude`, `codex`, `gemini`, `opencode`, `api`), optional `model`, `effort`. |
+| `speed` | `concurrency` (default `[1, 4]`), `max_tokens` (256), `prompt`, `skip`. |
+| `evals` | `dir` (the hrn-evals checkout), `suites`, `repeats` (attempts per task, overriding each suite), `hrn`, `skip`. |
 
-- [ ] Agent worker to pick tasks from queue
-- [ ] Agent planner to split prompts into subtasks
-- [ ] React-based frontend (currently HTML + Go templating)
-- [ ] Markdown rendering in UI
-- [ ] JSON export & comparison of runs
-- [ ] SQLite support (optional fallback)
-- [ ] GitHub Action for benchmarking models on PR
+Names may contain letters, digits, `_` and `-` only: they become hrn eval variant names.
+`bench check <file>` validates a sweep file and prints what it would run.
 
----
+Flags: `--only a,b` runs only the named targets, `--no-agents` skips the CLI baselines,
+`--no-evals` measures speed only, `--no-speed` runs evals only.
 
-## 📄 License
+`bench report <run-dir>...` renders one report from several runs. A target that appears in
+more than one run takes its result from the last, so a model re-run with `--only` after a fix
+replaces its row in a full sweep.
 
-Licensed under **GNU Affero General Public License v3 (AGPLv3)**
+## Results
 
-✅ You can:
-- Use it personally
-- Fork & contribute
-- Benchmark local models
+- [2026-10-01](docs/results/2026-10-01.md): seven local models on an RX 7900 XT against Claude
+  Sonnet and Codex, 3 attempts per task.
 
-🚫 You **may not**:
-- Use it in paid/hosted products without a commercial license
-- Rehost without releasing source
+## How the pieces connect
 
-💼 For commercial use → [cristiangirlea@gmail.com](mailto:cristiangirlea@gmail.com)
+An endpoint's eval stage runs hrn's own agent loop (`backend: api`) with
+`ANTHROPIC_BASE_URL` pointing at the endpoint. Current llama-server builds serve the Anthropic
+Messages API at `/v1/messages`, tool calls included, so hrn needs no change and no extra
+program to drive a local model. An external endpoint is assumed to serve only the OpenAI API
+until its entry says `"anthropic": true`; check your server's version for `/v1/messages`
+before setting it, or the eval stage is skipped for that endpoint (speed still runs).
 
----
+Agents run with `ANTHROPIC_BASE_URL` removed from their environment. Claude Code reads that
+variable too, so a value left over from an endpoint would send the "Claude" baseline to a local
+model with no error. Endpoints never receive a real API key: the sweep replaces it with a
+placeholder.
 
-## 🤝 Contributing
+## Choosing a local server
 
-PRs welcome. Issues encouraged. Ideas loved.
+| Server | Use it when |
+|---|---|
+| **llama.cpp `llama-server`** | The default here. One binary, every GPU vendor (Vulkan, CUDA, ROCm, Metal) and CPU, GGUF quantizations, OpenAI and Anthropic APIs, grammar-constrained JSON. Gives full control of offload (`--n-cpu-moe`), context and slots. |
+| **Ollama** | Convenience: `ollama pull` and it runs, built on llama.cpp. Less control over offload and slots, and it trails llama.cpp's newest models and flags. Good for trying a model quickly. |
+| **LM Studio** | A desktop UI over llama.cpp (and MLX on Macs). Good for browsing and chatting; the same engine underneath. |
+| **vLLM / SGLang** | Serving many users on Linux with NVIDIA (or supported AMD) GPUs: continuous batching and paged attention for throughput. Not for a Windows desktop. |
+
+All of them speak the OpenAI chat API, which is why the speed stage uses it. The practice that
+lasts is to depend on that protocol, not on one server.
+
+## What LangChain, LangGraph and Hugging Face are, and why this repo uses none of them
+
+- **Hugging Face** is the hub where open models and datasets are published (every GGUF file
+  measured here came from it), plus Python libraries (`transformers`, `datasets`) and servers
+  (TGI) for running models from Python. The hub is used here as the model registry; the
+  libraries are not needed, because llama.cpp runs the models.
+- **LangChain** is a Python/JS library of adapters: one interface over many model providers,
+  vector stores and document loaders, plus helpers for chaining calls. Useful to prototype
+  against many providers quickly; the cost is a thick abstraction that changes often.
+- **LangGraph** (from the LangChain team) builds stateful agents as graphs of steps, with
+  checkpoints, retries and human approval between steps. It is the framework answer to "an agent
+  loop that survives restarts".
+
+In this ecosystem those jobs are already done by smaller pieces: hrn is the agent loop (backends,
+tools, budgets, records), hrn's durable workers are the restartable orchestration, and
+[php-python-ai-bridge](https://github.com/cristiangirlea/php-python-ai-bridge) is retrieval. Adding
+LangChain would wrap them, not replace anything. They are worth knowing because many teams use
+them; they are not needed here.
+
+## Limits
+
+- One attempt per task is noise, especially for small models: set `evals.repeats` (3 or more)
+  before comparing.
+- The gates check what can be checked by a command. Prose quality (the goroutines explanation)
+  is checked for length and topics only; a judge model would score it.
+- Agents' costs are what hrn records: Claude Code reports cost, the Codex CLI reports tokens
+  only, and local models cost nothing per token.
+
+## Licence
+
+AGPL-3.0, see [LICENSE.txt](LICENSE.txt).
