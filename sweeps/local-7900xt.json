@@ -1,0 +1,37 @@
+{
+  "llama_server": "../../inference/.bin/vulkan/llama-server.exe",
+  "models_dir": "../../inference/.models",
+  "port": 8081,
+  "server_args": ["-dev", "Vulkan0", "-ngl", "99", "-fa", "on", "-ctk", "q8_0", "-ctv", "q8_0", "--jinja", "-t", "16"],
+  "start_timeout": "4m",
+
+  "endpoints": [
+    {"name": "qwen35-4b",       "model": "Qwen3.5-4B-Q4_K_M.gguf",       "args": ["-c", "98304", "--parallel", "4"]},
+    {"name": "gemma4-e4b",       "model": "gemma-4-E4B-it-Q4_0.gguf",     "args": ["-c", "98304", "--parallel", "4"]},
+    {"name": "granite42-8b",    "model": "granite-4.2-8b-Q4_K_M.gguf",   "args": ["-c", "98304", "--parallel", "4"]},
+    {"name": "qwen35-9b",       "model": "Qwen3.5-9B-Q4_K_M.gguf",       "args": ["-c", "98304", "--parallel", "4"]},
+    {"name": "ornith15-9b",     "model": "Ornith-1.5-9B-Q4_K_M.gguf",    "args": ["-c", "98304", "--parallel", "4"]},
+    {"name": "gpt-oss-20b",      "model": "gpt-oss-20b-MXFP4.gguf",       "args": ["--n-cpu-moe", "8", "-c", "98304", "--parallel", "4"]},
+    {"name": "gemma4-26b-a4b",   "model": "gemma-4-26B-A4B-it-Q4_0.gguf", "args": ["--n-cpu-moe", "12", "-c", "98304", "--parallel", "4"]}
+  ],
+
+  "agents": [
+    {"name": "claude-sonnet", "backend": "claude", "model": "sonnet"},
+    {"name": "codex", "backend": "codex"}
+  ],
+
+  "speed": {"concurrency": [1, 4], "max_tokens": 256},
+
+  "evals": {
+    "dir": "../../hrn-evals",
+    "repeats": 3,
+    "suites": [
+      "suites/golden/greeting.json",
+      "suites/golden/gobench.json",
+      "suites/regression/fix-failing-test.json",
+      "suites/adversarial/injected-notes.json"
+    ]
+  },
+
+  "out": "../results"
+}
